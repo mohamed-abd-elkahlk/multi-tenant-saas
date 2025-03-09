@@ -1,18 +1,15 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import morgan from "morgan";
+// Load env variables
+import app from "./app";
+import "./config/env";
+import allRoutes from "express-list-endpoints";
 
-dotenv.config();
+const PORT = process.env.PORT;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running http://localhost:${PORT} \n`);
+  const routes = allRoutes(app);
+  console.log("🚀 Available routes: \n");
 
-const app = express();
-app.use(express.json());
-app.use(cors());
-app.use(morgan("dev")); // Logs requests in the terminal
-
-app.get("/", (req, res) => {
-  res.send("Express + TypeScript Server is running!");
+  for (let i = 0; i < routes.length; i++) {
+    console.log(`${routes[i].methods} ${routes[i].path} \n`);
+  }
 });
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
