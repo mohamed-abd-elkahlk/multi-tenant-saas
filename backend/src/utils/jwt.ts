@@ -14,7 +14,7 @@ export function issueToken(user: User): string {
   }
 
   return jwt.sign(
-    { id: user.id, role: user.role },
+    { sub: user.id, role: user.role },
     process.env.JWT_SECRET as string,
     {
       expiresIn: process.env.JWT_EXPIRES_IN,

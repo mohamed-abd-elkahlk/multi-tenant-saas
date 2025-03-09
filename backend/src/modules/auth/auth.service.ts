@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt-ts";
 import { User } from "@/config/db";
 import { User as UserType } from "@prisma/client";
+import transporter from "@/utils/email";
 
 /**
  * Authentication service for handling user registration and login.
@@ -64,5 +65,60 @@ export class AuthService {
 
     // Return the user
     return user;
+  }
+  /**
+   * Sends a verification email to the user.
+   *
+   * @param {string} to - The recipient's email address
+   * @param {string} username - The username of the recipient
+   * @param {string} verificationLink - The verification link to be included in the email
+   * @returns {Promise<void>}
+   * @throws {Error} If there's an error sending the email
+   */
+  async sendVerificationEmail(
+    to: string,
+    username: string,
+    verificationLink: string
+  ): Promise<void> {
+    try {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to,
+        subject: "Email Verification",
+        template: "emailVerification", // This should match my `emailVerification.hbs` file
+        context: {
+          username,
+          verificationLink,
+        },
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log("Verification email sent successfully!");
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw error; // Re-throw the error to handle it in the calling code
+    }
+  }
+
+  async sendMFAEnabledEmail(to: string, name: string): Promise<void> {
+    try {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to,
+        subject: "Multi-Factor Authentication Enabled",
+        template: "mfaEmailNotification", // This should match your `mfaEmailNotification.hbs` file
+        context: {
+          name,
+          email: to,
+          security_link: "https://example.com/security",
+        },
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log("MFA enabled notification email sent successfully!");
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw error; // Re-throw the error to handle it in the calling code
+    }
   }
 }
