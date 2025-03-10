@@ -1,5 +1,5 @@
 import { User } from "@prisma/client";
-import jwt, { SignOptions } from "jsonwebtoken";
+import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
 
 /**
  * Issues a JWT token for a given user.
@@ -26,13 +26,35 @@ export function issueToken(user: User): string {
  * Verifies a JWT token and returns the decoded payload.
  *
  * @param {string} token - The JWT token to verify.
- * @returns {object | string} The decoded token payload.
+ * @returns {JwtPayload | string}
  * @throws {Error} If JWT_SECRET is not defined or verification fails.
  */
-export function verifyToken(token: string): object | string {
+export function verifyToken(token: string): JwtPayload {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined");
   }
+  const verifiedToken = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
 
-  return jwt.verify(token, process.env.JWT_SECRET);
+  return verifiedToken;
+}
+
+/**
+ * Generates a JWT token for email verification.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} email - The email address of the user.
+ * @returns {string} The signed JWT token.
+ * @throws {Error} If the `JWT_SECRET` environment variable is not defined.
+ */
+export function generateEmailVerificationToken(
+  userId: string,
+  email: string
+): string {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not defined in the environment variables.");
+  }
+
+  return jwt.sign({ sub: userId, email }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
 }

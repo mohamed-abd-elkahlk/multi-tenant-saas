@@ -11,13 +11,13 @@ router.post(
   AuthController.register
 );
 router.post("/login", validateRequest(loginSchema), AuthController.login);
-router.get("/logout", AuthController.logout);
-
+router.get("/email-verification", AuthController.emailVerification);
 router.use(
   passport.authenticate("jwt", {
     session: false,
   })
 );
+router.post("/logout", AuthController.logout);
 router.post("/mfaenable", AuthController.enableMFA);
 
 export default router;

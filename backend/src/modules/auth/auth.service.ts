@@ -2,6 +2,7 @@ import bcrypt from "bcrypt-ts";
 import { User } from "@/config/db";
 import { User as UserType } from "@prisma/client";
 import transporter from "@/utils/email";
+import { generateEmailVerificationToken } from "@/utils/jwt";
 
 /**
  * Authentication service for handling user registration and login.
@@ -10,14 +11,14 @@ export class AuthService {
   /**
    * Registers a new user by hashing the password and storing user data in the database.
    *
-   * @param {string} name - The name of the user.
+   * @param {string} username - The name of the user.
    * @param {string} email - The email of the user.
    * @param {string} password - The password of the user (will be hashed before storing).
    * @returns {Promise<UserType>} The created user object.
    * @throws {Error} If an error occurs while creating the user.
    */
   async register(
-    name: string,
+    username: string,
     email: string,
     password: string
   ): Promise<UserType> {
@@ -28,7 +29,7 @@ export class AuthService {
     return await User.create({
       data: {
         email,
-        name,
+        username,
         password: hash,
       },
     });
@@ -78,7 +79,7 @@ export class AuthService {
   async sendVerificationEmail(
     to: string,
     username: string,
-    verificationLink: string
+    token: string
   ): Promise<void> {
     try {
       const mailOptions = {
@@ -88,7 +89,7 @@ export class AuthService {
         template: "emailVerification", // This should match my `emailVerification.hbs` file
         context: {
           username,
-          verificationLink,
+          verificationLink: `${process.env.FRONT_END_URL}/api/auth/email-verification?token=${token}`,
         },
       };
 
@@ -100,7 +101,7 @@ export class AuthService {
     }
   }
 
-  async sendMFAEnabledEmail(to: string, name: string): Promise<void> {
+  async sendMFAEnabledEmail(to: string, username: string): Promise<void> {
     try {
       const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -108,7 +109,7 @@ export class AuthService {
         subject: "Multi-Factor Authentication Enabled",
         template: "mfaEmailNotification", // This should match your `mfaEmailNotification.hbs` file
         context: {
-          name,
+          username,
           email: to,
           security_link: "https://example.com/security",
         },
@@ -120,5 +121,46 @@ export class AuthService {
       console.error("Error sending email:", error);
       throw error; // Re-throw the error to handle it in the calling code
     }
+  }
+}
+
+/**
+ * Sends an email verification link to the user.
+ *
+ * @param {string} to - Recipient's email address.
+ * @param {string} username - The user's name.
+ * @param {string} userId - The user's unique ID.
+ * @returns {Promise<void>} Resolves when the email is sent successfully.
+ */
+export async function sendEmailVerification(
+  to: string,
+  username: string,
+  userId: string
+): Promise<void> {
+  try {
+    // Generate the verification token
+    const token = generateEmailVerificationToken(userId, to);
+
+    // Construct the email verification link
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to,
+      subject: "Verify Your Email Address",
+      template: "emailVerification", // Corresponds to `emailVerification.hbs`
+      context: {
+        username,
+        verificationLink,
+      },
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log("Email verification link sent successfully!");
+  } catch (error) {
+    console.error("Error sending email verification:", error);
+    throw error; // Re-throw for handling in the calling code
   }
 }

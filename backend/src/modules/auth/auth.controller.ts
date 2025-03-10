@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { HttpStatus } from "@/constants/httpStatus";
-import { issueToken } from "@/utils/jwt";
+import {
+  generateEmailVerificationToken,
+  issueToken,
+  verifyToken,
+} from "@/utils/jwt";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import { LoginRequestBody, RegisterRequestBody } from "./auth.types";
@@ -45,19 +49,14 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { name, email, password } = req.body as RegisterRequestBody;
-      const user = await auth.register(name, email, password);
-      const token = issueToken(user);
+      const { username, email, password } = req.body as RegisterRequestBody;
+      const user = await auth.register(username, email, password);
 
+      const emailToken = generateEmailVerificationToken(user.id, email);
+      await auth.sendVerificationEmail(email, username, emailToken);
       res
         .status(HttpStatus.CREATED)
-        .cookie("access_token", token, {
-          httpOnly: true,
-          sameSite: "strict", // CSRF protection
-          secure: process.env.NODE_ENV === "production", // Secure only in production
-          maxAge: 1 * 24 * 60 * 60 * 1000, // Expires in 1 day
-        })
-        .header("Authorization", token)
+
         .json({ message: "User created successfully" });
     } catch (error) {
       next(error);
@@ -170,12 +169,13 @@ export class AuthController {
       // Generate QR code (for Google Authenticator)
       const otpauthUrl = secret.otpauth_url!;
       const qrCode = await qrcode.toDataURL(otpauthUrl);
-      await auth.sendMFAEnabledEmail(user.email, user.name);
+      await auth.sendMFAEnabledEmail(user.email, user.username);
       res.status(HttpStatus.CREATED).json({ qrCode, secret: secret.base32 });
     } catch (error) {
       next(error);
     }
   }
+  // FIXME: test this code when you build the front end to get the qrcode to scan
   /**
    * Verifies the Multi-Factor Authentication (MFA) token for a user.
    *
@@ -228,6 +228,43 @@ export class AuthController {
           .status(HttpStatus.UNAUTHORIZED)
           .json({ message: "Invalid MFA token" });
       }
+    } catch (error) {
+      next(error);
+    }
+  }
+  /**
+   * Verifies a user's email using the verification token.
+   *
+   * @param {Request} req - Express request containing the verification token
+   * @param {Response} res - Express response object
+   * @param {NextFunction} next - Express next function for error handling
+   * @returns {Promise<void>} Resolves when email is verified or error is passed to next()
+   */
+  static async emailVerification(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== "string") {
+        res.status(HttpStatus.BAD_REQUEST).json({
+          message: "Verification token is required",
+        });
+        return;
+      }
+
+      const verfiedToken = verifyToken(token);
+
+      await User.update({
+        where: { id: verfiedToken.sub },
+        data: { isVerified: true },
+      });
+
+      res.status(HttpStatus.OK).json({
+        message: "Email verified successfully",
+      });
     } catch (error) {
       next(error);
     }

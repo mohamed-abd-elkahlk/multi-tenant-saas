@@ -10,7 +10,7 @@ import { AnyZodObject, ZodError } from "zod";
  * @example
  * const userSchema = z.object({
  *   body: z.object({
- *     name: z.string(),
+ *     username: z.string(),
  *     email: z.string().email()
  *   })
  * });
@@ -35,7 +35,7 @@ export const validateRequest =
         // Format validation errors
         const formattedErrors = error.errors.map((err) => ({
           message: err.message,
-          path: err.path.join("."), // Join path array with dots (e.g., "body.name")
+          path: err.path.join("."), // Join path array with dots (e.g., "body.username")
         }));
 
         // Send formatted errors in the response
