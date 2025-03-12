@@ -27,7 +27,6 @@
             width: 120px;
             margin-bottom: 20px;
             border-radius: 8px;
-            /* Optional: Adds rounded corners to the logo */
         }
 
         .header {
@@ -69,7 +68,7 @@
             border-radius: 6px;
             font-size: 16px;
             font-weight: 600;
-            margin-top: 15px;
+            margin-top: 20px;
             transition: background 0.3s ease-in-out;
         }
 
@@ -80,23 +79,54 @@
         .footer {
             font-size: 14px;
             color: #777;
-            margin-top: 20px;
+            margin-top: 25px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile-friendly adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                max-width: 90%;
+            }
+
+            .button {
+                width: 80%;
+                display: block;
+                text-align: center;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- Placeholder image for logo -->
         <img src="https://via.placeholder.com/120x60.png?text=Company+Logo" alt="Company Logo" class="logo">
         <p class="header">Multi-Factor Authentication Enabled</p>
         <p class="message">Hello <strong>{{username}}</strong>,</p>
-        <p class="message">Your email <strong>{{email}}</strong> is now protected with Multi-Factor Authentication
-            (MFA).
-            This adds an extra layer of security to your account.</p>
-        <p class="message">If you did not enable MFA, please secure your account immediately.</p>
+        <p class="message">
+            Your email <strong>{{email}}</strong> is now protected with <strong>{{type}}</strong> Multi-Factor
+            Authentication (MFA).
+            This adds an extra layer of security to your account.
+        </p>
+        <p class="message">
+            If you did not enable MFA, please <strong>secure your account immediately</strong>.
+        </p>
         <a href="{{security_link}}" class="button">Review Security Settings</a>
-        <p class="footer">If you have any questions, please contact our support team.</p>
+        <p class="footer">
+            If you need help, contact our <a href="{{support_link}}">Support Team</a>.
+        </p>
     </div>
 </body>
 

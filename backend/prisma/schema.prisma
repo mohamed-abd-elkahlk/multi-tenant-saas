@@ -14,29 +14,49 @@ datasource db {
 }
 
 model Tenant {
-  id        String    @id @default(cuid())
-  name      String
-  users     User[]
-  Product   Product[]
-  Order     Order[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Invoice   Invoice[]
+  id         String       @id @default(cuid())
+  name       String
+  users      User[]
+  Product    Product[]
+  Order      Order[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  Invoice    Invoice[]
+  BackupCode BackupCode[]
+}
+
+model BackupCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  tenantId  String?
+  codes     Json
+  createdAt DateTime @default(now())
+  usedAt    Json? // Store which codes have been used
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  username   String
-  password   String
-  mfaSecret  String?
-  mfaEnabled Boolean  @default(false)
-  isVerified Boolean  @default(false)
-  role       Role     @default(USER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  tenant     Tenant?  @relation(fields: [tenantId], references: [id])
-  tenantId   String?
+  id                   String      @id @default(cuid())
+  email                String      @unique
+  username             String
+  password             String
+  passwordResetToken   String? // Store reset token (hashed for security)
+  passwordResetExpires DateTime? // Expiry time for reset token
+  mfaSecret            String?
+  mfaEnabled           Boolean     @default(false)
+  mfaMethods           Json?
+  mfaSecrets           Json?
+  emailOtp             Int?
+  emailOtpExpires      DateTime?
+  isVerified           Boolean     @default(false)
+  role                 Role        @default(USER)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  tenant               Tenant?     @relation(fields: [tenantId], references: [id])
+  tenantId             String?
+  BackupCode           BackupCode?
 }
 
 model Product {
@@ -76,4 +96,5 @@ model Invoice {
 enum Role {
   USER
   ADMIN
+  MANEGER
 }
